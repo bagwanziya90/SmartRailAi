@@ -224,4 +224,4 @@ def ai_search():
 # ---------------- RUN APPLICATION ----------------
 
 if __name__ == "_main_":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000,debug=True)
