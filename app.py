@@ -1,8 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for
 import mysql.connector
-
+import os
 app = Flask('__name__')
-
+def get_db_connection():
+    return mysql.connector.connect(
+        host=os.environ.get("DB_HOST"),
+        user=os.environ.get("DB_USER"),
+        password=os.environ.get("DB_PASSWORD"),
+        database=os.environ.get("DB_NAME")
+    )
 
 # ---------------- DATABASE CONNECTION ----------------
 
@@ -218,4 +224,4 @@ def ai_search():
 # ---------------- RUN APPLICATION ----------------
 
 if __name__ == "_main_":
-    app.run(host="0.0.0.0", port=5000,debug=True)
+    app.run(host="0.0.0.0", port=5000)
