@@ -11,16 +11,6 @@ def get_db_connection():
         database=os.environ.get("DB_NAME")
     )
 
-# ---------------- DATABASE CONNECTION ----------------
-
-def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="root@123",
-        database="smartrail"
-    )
-
 
 # ---------------- HOME PAGE ----------------
 
