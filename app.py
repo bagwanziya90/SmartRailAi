@@ -3,7 +3,6 @@ import mysql.connector
 import os
 base_dir = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(base_dir, 'templates'))
-app = Flask(__name__)
 def get_db_connection():
     return mysql.connector.connect(
         host=os.environ.get("DB_HOST"),
