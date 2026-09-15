@@ -70,13 +70,9 @@ def trains():
 
 # ---------------- BOOKING PAGE ----------------
 
-@app.route("/bookings", methods=["GET", "POST"])
-def bookings():
-
-    message = ""
-
-    if request.method == "POST":
-
+@app.route('/booking')
+def booking():
+    return render_template('booking.html')
         name = request.form.get("name", "").strip()
         age = request.form.get("age", "").strip()
         gender = request.form.get("gender", "").strip()
