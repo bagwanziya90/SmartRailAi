@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -97,9 +98,8 @@
 
     {% endif %}
 
-
     <form method="POST"
-          action="{{ url_for('bookings') }}">
+          action="{{ url_for('booking') }}">
 
         <!-- Passenger Name -->
 
@@ -113,7 +113,6 @@
             placeholder="Enter passenger name"
             required
         >
-
 
         <!-- Age -->
 
@@ -129,7 +128,6 @@
             placeholder="Enter age"
             required
         >
-
 
         <!-- Gender -->
 
@@ -157,7 +155,6 @@
 
         </select>
 
-
         <!-- Phone -->
 
         <label>
@@ -171,7 +168,6 @@
             required
         >
 
-
         <!-- Journey Date -->
 
         <label>
@@ -183,7 +179,6 @@
             name="journey_date"
             required
         >
-
 
         <!-- Train -->
 
@@ -204,17 +199,12 @@
                     <option value="{{ train.train_id }}">
 
                         {{ train.train_name }}
-
                         -
                         {{ train.source }}
-
                         →
-
                         {{ train.destination }}
-
                         -
                         ₹{{ train.fare }}
-
                         -
                         {{ train.seats }} seats
 
@@ -225,7 +215,6 @@
             {% endfor %}
 
         </select>
-
 
         <!-- Number of Seats -->
 
@@ -242,7 +231,6 @@
             required
         >
 
-
         <!-- Book -->
 
         <button type="submit">
@@ -251,11 +239,17 @@
 
     </form>
 
-
     <a href="{{ url_for('trains') }}"
        class="back">
 
         ← Back to Trains
+
+    </a>
+
+    <a href="{{ url_for('home') }}"
+       class="back">
+
+        ← Back to Home
 
     </a>
 
@@ -264,7 +258,4 @@
 </body>
 
 </html>
-    <a href="/">Back to Home</a>
-
-</body>
-</html>
+```
