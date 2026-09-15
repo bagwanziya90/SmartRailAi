@@ -40,6 +40,7 @@ def trains():
     cursor = db.cursor(dictionary=True)
 
     try:
+
         if source and destination:
 
             query = """
@@ -52,11 +53,13 @@ def trains():
             cursor.execute(query, (source, destination))
 
         else:
+
             cursor.execute("SELECT * FROM trains")
 
         train_list = cursor.fetchall()
 
     finally:
+
         cursor.close()
         db.close()
 
@@ -70,9 +73,15 @@ def trains():
 
 # ---------------- BOOKING PAGE ----------------
 
-@app.route('/booking')
+@app.route("/booking", methods=["GET", "POST"])
 def booking():
-    return render_template('booking.html')
+
+    message = ""
+
+    # ---------------- BOOK TICKET ----------------
+
+    if request.method == "POST":
+
         name = request.form.get("name", "").strip()
         age = request.form.get("age", "").strip()
         gender = request.form.get("gender", "").strip()
@@ -86,13 +95,17 @@ def booking():
         except (ValueError, TypeError):
             seats = 0
 
+        # Validate passenger details
         if not name or not age or not gender or not phone:
+
             message = "Please fill in all passenger details."
 
         elif not journey_date or not train_id:
+
             message = "Please select a train and journey date."
 
         elif seats <= 0:
+
             message = "Please select at least one seat."
 
         else:
@@ -101,10 +114,11 @@ def booking():
             cursor = db.cursor(dictionary=True)
 
             try:
+
                 # Start transaction
                 db.start_transaction()
 
-                # Lock the selected train row
+                # Lock selected train
                 cursor.execute(
                     """
                     SELECT *
@@ -129,6 +143,7 @@ def booking():
 
                 else:
 
+                    # Calculate fare
                     total_fare = train["fare"] * seats
 
                     # Insert passenger
@@ -177,9 +192,13 @@ def booking():
                         SET seats = seats - %s
                         WHERE train_id = %s
                         """,
-                        (seats, train_id)
+                        (
+                            seats,
+                            train_id
+                        )
                     )
 
+                    # Save changes
                     db.commit()
 
                     message = (
@@ -190,6 +209,7 @@ def booking():
             except mysql.connector.Error as error:
 
                 db.rollback()
+
                 message = f"Booking failed: {error}"
 
             finally:
@@ -197,20 +217,25 @@ def booking():
                 cursor.close()
                 db.close()
 
-    # Get all trains for booking dropdown
+    # ---------------- GET ALL TRAINS ----------------
+
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
 
     try:
+
         cursor.execute("SELECT * FROM trains")
         train_list = cursor.fetchall()
 
     finally:
+
         cursor.close()
         db.close()
 
+    # IMPORTANT:
+    # Use the SAME HTML filename here.
     return render_template(
-        "bookings.html",
+        "booking.html",
         trains=train_list,
         message=message
     )
@@ -271,6 +296,7 @@ def ai_search():
         results = cursor.fetchall()
 
     finally:
+
         cursor.close()
         db.close()
 
@@ -285,6 +311,7 @@ def ai_search():
 # ---------------- RUN APPLICATION ----------------
 
 if __name__ == "__main__":
+
     app.run(
         host="0.0.0.0",
         port=5000,
