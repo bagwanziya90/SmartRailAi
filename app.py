@@ -13,11 +13,27 @@ app = Flask(
 # ---------------- DATABASE CONNECTION ----------------
 
 def get_db_connection():
+    host = os.environ.get("DB_HOST", "").strip()
+    user = os.environ.get("DB_USER", "").strip()
+    password = os.environ.get("DB_PASSWORD", "")
+    database = os.environ.get("DB_NAME", "").strip()
+    port = int(os.environ.get("DB_PORT", "3306").strip())
+
+    if not host:
+        raise RuntimeError("DB_HOST is missing")
+    if not user:
+        raise RuntimeError("DB_USER is missing")
+    if not password:
+        raise RuntimeError("DB_PASSWORD is missing")
+    if not database:
+        raise RuntimeError("DB_NAME is missing")
+
     return mysql.connector.connect(
-        host=os.environ.get("DB_HOST"),
-        user=os.environ.get("DB_USER"),
-        password=os.environ.get("DB_PASSWORD"),
-        database=os.environ.get("DB_NAME")
+        host=host,
+        port=port,
+        user=user,
+        password=password,
+        database=database
     )
 
 
