@@ -1,106 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Available Trains</title>
 
     <style>
-
         body {
-            font-family: Arial;
-            background: #eef3f8;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
             margin: 0;
+            padding: 30px;
         }
 
-        header {
-            background: #12355b;
-            color: white;
+        h1 {
             text-align: center;
-            padding: 20px;
+            color: #222;
         }
 
-        table {
-            width: 90%;
-            margin: 40px auto;
+        .train-container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .train-card {
             background: white;
-            border-collapse: collapse;
-            box-shadow: 0 4px 15px #bbb;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
         }
 
-        th, td {
-            padding: 15px;
-            text-align: center;
-            border: 1px solid #ddd;
+        .train-card h2 {
+            color: #1565c0;
         }
 
-        th {
-            background: #1769aa;
+        .train-info {
+            margin: 8px 0;
+            font-size: 16px;
+        }
+
+        .book-btn {
+            display: inline-block;
+            background: #e53935;
             color: white;
-        }
-
-        tr:hover {
-            background: #f2f2f2;
-        }
-
-        a {
-            display: block;
-            width: 100px;
-            margin: 20px auto;
-            padding: 12px;
-            background: #1769aa;
-            color: white;
-            text-align: center;
+            padding: 12px 20px;
+            border-radius: 6px;
             text-decoration: none;
-            border-radius: 7px;
+            margin-top: 10px;
+            font-weight: bold;
         }
 
-    </style>
+        .book-btn:hover {
+            background: #c62828;
+        }
 
+        .back-btn {
+            display: inline-block;
+            background: #555;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 
 <body>
 
-<header>
-    <h1>🚆 Available Trains</h1>
-</header>
+<div class="train-container">
 
-<table>
+    <a href="{{ url_for('home') }}" class="back-btn">
+        ← Home
+    </a>
 
-    <tr>
-        <th>Train ID</th>
-        <th>Train Name</th>
-        <th>From</th>
-        <th>To</th>
-        <th>Departure</th>
-        <th>Arrival</th>
-        <th>Seats</th>
-    </tr>
+    <h1>Available Trains</h1>
 
-    {% for train in trains %}
+    {% if trains %}
 
-    <tr>
+        {% for train in trains %}
 
-        <td>{{ train.train_id }}</td>
+        <div class="train-card">
 
-        <td>{{ train.train_name }}</td>
+            <h2>
+                {{ train.train_name }}
+            </h2>
 
-        <td>{{ train.source }}</td>
+            <div class="train-info">
+                <strong>Train ID:</strong>
+                {{ train.train_id }}
+            </div>
 
-        <td>{{ train.destination }}</td>
+            <div class="train-info">
+                <strong>From:</strong>
+                {{ train.source }}
+            </div>
 
-        <td>{{ train.departure }}</td>
+            <div class="train-info">
+                <strong>To:</strong>
+                {{ train.destination }}
+            </div>
 
-        <td>{{ train.arrival }}</td>
+            <div class="train-info">
+                <strong>Fare:</strong>
+                ₹{{ train.fare }}
+            </div>
 
-        <td>{{ train.seats }}</td>
+            <div class="train-info">
+                <strong>Available Seats:</strong>
+                {{ train.seats }}
+            </div>
 
-    </tr>
+            {% if train.seats > 0 %}
 
-    {% endfor %}
+                <a
+                    href="{{ url_for('bookings') }}?train_id={{ train.train_id }}"
+                    class="book-btn"
+                >
+                    🎫 Book Ticket
+                </a>
 
-</table>
+            {% else %}
 
-<a href="/">🏠 Home</a>
+                <p style="color:red;">
+                    No seats available
+                </p>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <h2 style="text-align:center;">
+            No trains found.
+        </h2>
+
+    {% endif %}
+
+</div>
 
 </body>
 </html>
