@@ -1,102 +1,269 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Railway Ticket</title>
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Book Ticket</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            padding: 30px;
+        }
+
+        .booking-box {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+        }
+
+        h1 {
+            text-align: center;
+            color: #1565c0;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 11px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-top: 25px;
+            background: #e53935;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #c62828;
+        }
+
+        .message {
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 6px;
+        }
+
+        .back {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+    </style>
+
 </head>
 
 <body>
 
-    <h1>🎫 Railway Ticket Booking</h1>
+<div class="booking-box">
 
-    <form action="/bookings" 
-    method="POST">
+    <h1>🎫 Book Your Ticket</h1>
 
-        <label for="name">Name:</label>
+    {% if message %}
+
+        <div class="message">
+            {{ message }}
+        </div>
+
+    {% endif %}
+
+
+    <form method="POST"
+          action="{{ url_for('bookings') }}">
+
+        <!-- Passenger Name -->
+
+        <label>
+            Passenger Name
+        </label>
+
         <input
             type="text"
-            id="name"
             name="name"
-            placeholder="Enter your name"
+            placeholder="Enter passenger name"
             required
         >
 
-        <br><br>
 
-        <label for="age">Age:</label>
+        <!-- Age -->
+
+        <label>
+            Age
+        </label>
+
         <input
             type="number"
-            id="age"
             name="age"
             min="1"
             max="120"
-            placeholder="Enter your age"
+            placeholder="Enter age"
             required
         >
 
-        <br><br>
 
-        <label for="gender">Gender:</label>
-        <select id="gender" name="gender" required>
-            <option value="">Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
+        <!-- Gender -->
+
+        <label>
+            Gender
+        </label>
+
+        <select name="gender" required>
+
+            <option value="">
+                Select Gender
+            </option>
+
+            <option value="Male">
+                Male
+            </option>
+
+            <option value="Female">
+                Female
+            </option>
+
+            <option value="Other">
+                Other
+            </option>
+
         </select>
 
-        <br><br>
 
-        <label for="phone">Phone:</label>
+        <!-- Phone -->
+
+        <label>
+            Phone Number
+        </label>
+
         <input
             type="tel"
-            id="phone"
             name="phone"
-            pattern="[0-9]{10}"
-            maxlength="10"
-            placeholder="Enter 10-digit phone number"
+            placeholder="Enter phone number"
             required
         >
 
-        <br><br>
 
-        <label for="train_id">Train ID:</label>
-        <input
-            type="number"
-            id="train_id"
-            name="train_id"
-            min="1"
-            placeholder="Enter Train ID"
-            required
-        >
+        <!-- Journey Date -->
 
-        <br><br>
+        <label>
+            Journey Date
+        </label>
 
-        <label for="journey_date">Journey Date:</label>
         <input
             type="date"
-            id="journey_date"
             name="journey_date"
             required
         >
 
-        <label>Number of Seats</label>
-        <input   
-           type="number"
-           id="seats"
-           name="seats"
-           min="1"
-           required
 
->
+        <!-- Train -->
 
-        <br><br>
+        <label>
+            Select Train
+        </label>
 
-        <button type="submit">🎫 Book Ticket</button>
+        <select name="train_id" required>
+
+            <option value="">
+                Select Train
+            </option>
+
+            {% for train in trains %}
+
+                {% if train.seats > 0 %}
+
+                    <option value="{{ train.train_id }}">
+
+                        {{ train.train_name }}
+
+                        -
+                        {{ train.source }}
+
+                        →
+
+                        {{ train.destination }}
+
+                        -
+                        ₹{{ train.fare }}
+
+                        -
+                        {{ train.seats }} seats
+
+                    </option>
+
+                {% endif %}
+
+            {% endfor %}
+
+        </select>
+
+
+        <!-- Number of Seats -->
+
+        <label>
+            Number of Seats
+        </label>
+
+        <input
+            type="number"
+            name="seats"
+            min="1"
+            max="10"
+            value="1"
+            required
+        >
+
+
+        <!-- Book -->
+
+        <button type="submit">
+            🎫 Book Ticket
+        </button>
 
     </form>
 
-    <br>
 
+    <a href="{{ url_for('trains') }}"
+       class="back">
+
+        ← Back to Trains
+
+    </a>
+
+</div>
+
+</body>
+
+</html>
     <a href="/">Back to Home</a>
 
 </body>
