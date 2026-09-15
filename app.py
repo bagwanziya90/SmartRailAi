@@ -1,8 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request
 import mysql.connector
 import os
+
 base_dir = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, template_folder=os.path.join(base_dir, 'templates'))
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(base_dir, "templates")
+)
+
+
+# ---------------- DATABASE CONNECTION ----------------
+
 def get_db_connection():
     return mysql.connector.connect(
         host=os.environ.get("DB_HOST"),
@@ -24,30 +33,32 @@ def home():
 @app.route("/trains")
 def trains():
 
-    source = request.args.get("source", "")
-    destination = request.args.get("destination", "")
+    source = request.args.get("source", "").strip()
+    destination = request.args.get("destination", "").strip()
 
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
 
-    if source and destination:
+    try:
+        if source and destination:
 
-        query = """
-        SELECT * FROM trains
-        WHERE LOWER(source) = LOWER(%s)
-        AND LOWER(destination) = LOWER(%s)
-        """
+            query = """
+                SELECT *
+                FROM trains
+                WHERE LOWER(source) = LOWER(%s)
+                AND LOWER(destination) = LOWER(%s)
+            """
 
-        cursor.execute(query, (source, destination))
+            cursor.execute(query, (source, destination))
 
-    else:
+        else:
+            cursor.execute("SELECT * FROM trains")
 
-        cursor.execute("SELECT * FROM trains")
+        train_list = cursor.fetchall()
 
-    train_list = cursor.fetchall()
-
-    cursor.close()
-    db.close()
+    finally:
+        cursor.close()
+        db.close()
 
     return render_template(
         "trains.html",
@@ -58,100 +69,149 @@ def trains():
 
 
 # ---------------- BOOKING PAGE ----------------
-@app.route("/bookings", 
-methods=["GET", "POST"])
+
+@app.route("/bookings", methods=["GET", "POST"])
 def bookings():
 
     message = ""
 
     if request.method == "POST":
-        name = request.form.get("name")
-        age = request.form.get("age")
-        phone = request.form.get("phone")
-        journey_date = request.form.get("journey_date")
-        seats = int(request.form.get("seats"))
-        train_id = request.form.get("train_id")
 
+        name = request.form.get("name", "").strip()
+        age = request.form.get("age", "").strip()
+        gender = request.form.get("gender", "").strip()
+        phone = request.form.get("phone", "").strip()
+        journey_date = request.form.get("journey_date", "").strip()
+        train_id = request.form.get("train_id", "").strip()
 
-        db = get_db_connection()
-        cursor = db.cursor(dictionary=True)
+        # Validate seats
+        try:
+            seats = int(request.form.get("seats", 0))
+        except (ValueError, TypeError):
+            seats = 0
 
-        # Find train
-        cursor.execute(
-            "SELECT * FROM trains WHERE train_id = %s",
-            (train_id,)
-        )
+        if not name or not age or not gender or not phone:
+            message = "Please fill in all passenger details."
 
-        train = cursor.fetchone()
+        elif not journey_date or not train_id:
+            message = "Please select a train and journey date."
 
-        if train is None:
-            message = "Train not found."
-
-        elif train.get("seats", 0) < seats:
-            message = "Not enough seats available."
+        elif seats <= 0:
+            message = "Please select at least one seat."
 
         else:
 
-            total_fare = train["fare"] * seats
+            db = get_db_connection()
+            cursor = db.cursor(dictionary=True)
 
-            # Insert passenger
-            cursor.execute(
-                """
-                INSERT INTO passengers
-                (name, age, gender, phone)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (name, age, gender, phone)
-            )
+            try:
+                # Start transaction
+                db.start_transaction()
 
-            passenger_id = cursor.lastrowid
-
-            # Insert booking
-            cursor.execute(
-                """
-                INSERT INTO bookings
-                (passenger_id, train_id, journey_date,
-                 seats_booked, total_fare)
-                VALUES (%s, %s, %s, %s, %s)
-                """,
-                (
-                    passenger_id,
-                    train_id,
-                    journey_date,
-                    seats,
-                    total_fare
+                # Lock the selected train row
+                cursor.execute(
+                    """
+                    SELECT *
+                    FROM trains
+                    WHERE train_id = %s
+                    FOR UPDATE
+                    """,
+                    (train_id,)
                 )
-            )
 
-            # Reduce seats
-            cursor.execute(
-                """
-                UPDATE trains
-                SET seats = seats - %s
-                WHERE train_id = %s
-                """,
-                (seats, train_id)
-            )
+                train = cursor.fetchone()
 
-            db.commit()
+                if train is None:
 
-            message = (
-                "Ticket booked successfully! "
-                f"Total Fare: ₹{total_fare}"
-            )
+                    message = "Train not found."
+                    db.rollback()
 
-        cursor.close()
-        db.close()
+                elif train.get("seats", 0) < seats:
+
+                    message = "Not enough seats available."
+                    db.rollback()
+
+                else:
+
+                    total_fare = train["fare"] * seats
+
+                    # Insert passenger
+                    cursor.execute(
+                        """
+                        INSERT INTO passengers
+                        (name, age, gender, phone)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        (
+                            name,
+                            age,
+                            gender,
+                            phone
+                        )
+                    )
+
+                    passenger_id = cursor.lastrowid
+
+                    # Insert booking
+                    cursor.execute(
+                        """
+                        INSERT INTO bookings
+                        (
+                            passenger_id,
+                            train_id,
+                            journey_date,
+                            seats_booked,
+                            total_fare
+                        )
+                        VALUES (%s, %s, %s, %s, %s)
+                        """,
+                        (
+                            passenger_id,
+                            train_id,
+                            journey_date,
+                            seats,
+                            total_fare
+                        )
+                    )
+
+                    # Reduce available seats
+                    cursor.execute(
+                        """
+                        UPDATE trains
+                        SET seats = seats - %s
+                        WHERE train_id = %s
+                        """,
+                        (seats, train_id)
+                    )
+
+                    db.commit()
+
+                    message = (
+                        "Ticket booked successfully! "
+                        f"Total Fare: ₹{total_fare}"
+                    )
+
+            except mysql.connector.Error as error:
+
+                db.rollback()
+                message = f"Booking failed: {error}"
+
+            finally:
+
+                cursor.close()
+                db.close()
 
     # Get all trains for booking dropdown
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM trains")
-    train_list = cursor.fetchall()
+    try:
+        cursor.execute("SELECT * FROM trains")
+        train_list = cursor.fetchall()
 
-    cursor.close()
-    db.close()
+    finally:
+        cursor.close()
+        db.close()
 
     return render_template(
         "bookings.html",
@@ -160,49 +220,63 @@ def bookings():
     )
 
 
-
 # ---------------- AI SMART SEARCH ----------------
 
 @app.route("/ai-search")
 def ai_search():
 
-    query = request.args.get("query", "").lower()
+    query = request.args.get("query", "").lower().strip()
 
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
 
-    # Simple AI-style keyword understanding
-    if "mumbai" in query and "pune" in query:
+    try:
 
-        cursor.execute("""
-        SELECT * FROM trains
-        WHERE LOWER(source) = 'mumbai'
-        AND LOWER(destination) = 'pune'
-        """)
+        # Mumbai → Pune
+        if "mumbai" in query and "pune" in query:
 
-    elif "pune" in query and "mumbai" in query:
+            cursor.execute(
+                """
+                SELECT *
+                FROM trains
+                WHERE LOWER(source) = 'mumbai'
+                AND LOWER(destination) = 'pune'
+                """
+            )
 
-        cursor.execute("""
-        SELECT * FROM trains
-        WHERE LOWER(source) = 'pune'
-        AND LOWER(destination) = 'mumbai'
-        """)
+        # Pune → Mumbai
+        elif "pune" in query and "mumbai" in query:
 
-    elif "delhi" in query:
+            cursor.execute(
+                """
+                SELECT *
+                FROM trains
+                WHERE LOWER(source) = 'pune'
+                AND LOWER(destination) = 'mumbai'
+                """
+            )
 
-        cursor.execute("""
-        SELECT * FROM trains
-        WHERE LOWER(destination) = 'delhi'
-        """)
+        # Any train going to Delhi
+        elif "delhi" in query:
 
-    else:
+            cursor.execute(
+                """
+                SELECT *
+                FROM trains
+                WHERE LOWER(destination) = 'delhi'
+                """
+            )
 
-        cursor.execute("SELECT * FROM trains")
+        # No recognized route
+        else:
 
-    results = cursor.fetchall()
+            cursor.execute("SELECT * FROM trains")
 
-    cursor.close()
-    db.close()
+        results = cursor.fetchall()
+
+    finally:
+        cursor.close()
+        db.close()
 
     return render_template(
         "trains.html",
@@ -214,5 +288,9 @@ def ai_search():
 
 # ---------------- RUN APPLICATION ----------------
 
-if __name__ == "_main_":
-    app.run(host="0.0.0.0", port=5000,debug=True)
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )
